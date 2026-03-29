@@ -77,14 +77,14 @@ export const PAYMENT_ICONS: Record<PaymentMethod, typeof CreditCard> = {
 
 // Chart color palette
 export const CHART_COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-  'hsl(var(--primary))',
-  'hsl(var(--accent))',
-  'hsl(var(--muted-foreground))',
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+  'var(--primary)',
+  'var(--accent)',
+  'var(--muted-foreground)',
 ]
 
 // All expense categories

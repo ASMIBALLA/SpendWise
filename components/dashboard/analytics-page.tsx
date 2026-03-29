@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useExpenses } from '@/components/expense-provider'
-import { CATEGORY_LABELS, CHART_COLORS } from '@/lib/constants'
+import { CATEGORY_LABELS, CHART_COLORS, ALL_CATEGORIES } from '@/lib/constants'
 import { formatCurrency } from '@/lib/format'
 import type { ExpenseCategory } from '@/lib/types'
 import {
@@ -243,7 +243,7 @@ export function AnalyticsPage() {
                       return null
                     }}
                   />
-                  <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -279,9 +279,9 @@ export function AnalyticsPage() {
                   <Line
                     type="monotone"
                     dataKey="amount"
-                    stroke="hsl(var(--accent))"
+                    stroke="var(--accent)"
                     strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--accent))' }}
+                    dot={{ fill: 'var(--accent)' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -323,7 +323,7 @@ export function AnalyticsPage() {
                           className="h-full rounded-full transition-all duration-500"
                           style={{
                             width: `${percentage}%`,
-                            backgroundColor: CHART_COLORS[index % CHART_COLORS.length]
+                            backgroundColor: CHART_COLORS[ALL_CATEGORIES.indexOf(cat.category) % CHART_COLORS.length]
                           }}
                         />
                       </div>
