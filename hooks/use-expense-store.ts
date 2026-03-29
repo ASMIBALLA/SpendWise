@@ -11,6 +11,12 @@ import {
   syncUserProfile,
 } from '@/lib/actions/data'
 
+// Helper to reliably format a local JS Date to YYYY-MM-DD for comparisons
+const toDateStr = (d: Date) => {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 export function useExpenseStore() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
@@ -29,15 +35,16 @@ export function useExpenseStore() {
   const calculateBudgetSpent = useCallback((expenseList: Expense[], budgetList: Budget[]): Budget[] => {
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const startOfWeek = new Date(now)
-    startOfWeek.setDate(now.getDate() - now.getDay())
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
+
+    const monthStr = toDateStr(startOfMonth)
+    const weekStr = toDateStr(startOfWeek)
 
     return budgetList.map((budget) => {
       const relevantExpenses = expenseList.filter((expense) => {
-        const expenseDate = new Date(expense.date)
         const isInPeriod =
-          budget.period === 'monthly' ? expenseDate >= startOfMonth : expenseDate >= startOfWeek
-        return expense.category === budget.category && isInPeriod
+          budget.period === 'monthly' ? expense.date >= monthStr : expense.date >= weekStr
+        return expense.category.toLowerCase() === budget.category.toLowerCase() && isInPeriod
       })
       const spent = relevantExpenses.reduce((sum, exp) => sum + exp.amount, 0)
       return { ...budget, spent }
@@ -143,11 +150,15 @@ export function useExpenseStore() {
       })
   }, [calculateBudgetSpent, processRecurringRules])
 
-  // Recalculate budgets when expenses change
+  // Recalculate budgets when expenses or budgets change
   useEffect(() => {
     if (isLoading) return
     setBudgets((currentBudgets) => calculateBudgetSpent(expenses, currentBudgets))
   }, [expenses, calculateBudgetSpent, isLoading])
+
+  const totalBudgeted = budgets.reduce((sum, b) => sum + b.limit, 0)
+
+
 
   // Add expense
   const addExpense = useCallback(
@@ -197,7 +208,9 @@ export function useExpenseStore() {
     setExpenses((prev) => {
       const updated = prev.map((exp) => (exp.id === id ? { ...exp, ...updates } : exp))
       const modified = updated.find((e) => e.id === id)
-      if (modified) syncExpense(modified)
+      if (modified) {
+        queueMicrotask(() => syncExpense(modified))
+      }
       return updated
     })
   }, [])
@@ -206,7 +219,9 @@ export function useExpenseStore() {
   const deleteExpense = useCallback((id: string) => {
     setExpenses((prev) => {
       const expenseToDelete = prev.find((e) => e.id === id)
-      if (expenseToDelete) syncExpense(expenseToDelete, true)
+      if (expenseToDelete) {
+        queueMicrotask(() => syncExpense(expenseToDelete, true))
+      }
       return prev.filter((exp) => exp.id !== id)
     })
   }, [])
@@ -216,7 +231,9 @@ export function useExpenseStore() {
     setBudgets((prev) => {
       const updated = prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
       const modified = updated.find((b) => b.id === id)
-      if (modified) syncBudget(modified)
+      if (modified) {
+        queueMicrotask(() => syncBudget(modified))
+      }
       return updated
     })
   }, [])
@@ -236,7 +253,9 @@ export function useExpenseStore() {
   const updateUser = useCallback((updates: Partial<User>) => {
     setUser((prev) => {
       const updated = { ...prev, ...updates }
-      syncUserProfile({ name: updated.name, currency: updated.currency, monthlyBudget: updated.monthlyBudget })
+      queueMicrotask(() => {
+        syncUserProfile({ name: updated.name, currency: updated.currency, monthlyBudget: updated.monthlyBudget })
+      })
       return updated
     })
   }, [])
@@ -285,7 +304,9 @@ export function useExpenseStore() {
   const deleteIncome = useCallback((id: string) => {
     setIncomes((prev) => {
       const incomeToDelete = prev.find((i) => i.id === id)
-      if (incomeToDelete) syncIncome(incomeToDelete, true)
+      if (incomeToDelete) {
+        queueMicrotask(() => syncIncome(incomeToDelete, true))
+      }
       return prev.filter((inc) => inc.id !== id)
     })
   }, [])
@@ -295,19 +316,21 @@ export function useExpenseStore() {
     (period: 'today' | 'week' | 'month' | 'all') => {
       const now = new Date()
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const startOfWeek = new Date(now)
-      startOfWeek.setDate(now.getDate() - now.getDay())
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
+      const dayStr = toDateStr(startOfDay)
+      const weekStr = toDateStr(startOfWeek)
+      const monthStr = toDateStr(startOfMonth)
+
       return expenses.filter((expense) => {
-        const expenseDate = new Date(expense.date)
         switch (period) {
           case 'today':
-            return expenseDate >= startOfDay
+            return expense.date === dayStr
           case 'week':
-            return expenseDate >= startOfWeek
+            return expense.date >= weekStr
           case 'month':
-            return expenseDate >= startOfMonth
+            return expense.date >= monthStr
           default:
             return true
         }
@@ -329,20 +352,22 @@ export function useExpenseStore() {
     (period: 'today' | 'week' | 'month' | 'all') => {
       const now = new Date()
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const startOfWeek = new Date(now)
-      startOfWeek.setDate(now.getDate() - now.getDay())
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+      const dayStr = toDateStr(startOfDay)
+      const weekStr = toDateStr(startOfWeek)
+      const monthStr = toDateStr(startOfMonth)
 
       return incomes
         .filter((income) => {
-          const incomeDate = new Date(income.date)
           switch (period) {
             case 'today':
-              return incomeDate >= startOfDay
+              return income.date === dayStr
             case 'week':
-              return incomeDate >= startOfWeek
+              return income.date >= weekStr
             case 'month':
-              return incomeDate >= startOfMonth
+              return income.date >= monthStr
             default:
               return true
           }
@@ -367,7 +392,12 @@ export function useExpenseStore() {
         other: 0,
       }
       periodExpenses.forEach((exp) => {
-        categoryMap[exp.category] += exp.amount
+        const cat = exp.category.toLowerCase()
+        if (categoryMap[cat] !== undefined) {
+          categoryMap[cat] += exp.amount
+        } else {
+          categoryMap.other += exp.amount
+        }
       })
       return Object.entries(categoryMap)
         .filter(([, amount]) => amount > 0)
@@ -468,6 +498,7 @@ export function useExpenseStore() {
   return {
     expenses,
     budgets,
+    totalBudgeted,
     user,
     incomes,
     recurringRules,

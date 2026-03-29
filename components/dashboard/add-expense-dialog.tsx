@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { AnimatedButton } from '@/components/auth/animated-button'
+import { toast } from 'sonner'
+import { getSmartReaction } from '@/lib/microcopy'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -31,8 +35,9 @@ interface AddExpenseDialogProps {
 }
 
 export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpenseDialogProps) {
-  const { addExpense, user } = useExpenses()
+  const { addExpense, user, budgets } = useExpenses()
   const [open, setOpen] = useState(defaultOpen ?? false)
+  const [streak, setStreak] = useState(0)
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<ExpenseCategory>('food')
@@ -48,17 +53,59 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!amount || !description) return
+    if (!amount) return
+
+    const parsedAmount = parseFloat(amount)
+    
+    // Evaluate Budget & Streak constraints
+    const budgetForCategory = budgets.find(b => b.category === category)
+    const budgetLimit = budgetForCategory ? budgetForCategory.limit : (user.monthlyBudget * 0.2)
+    const ratio = parsedAmount / budgetLimit
+    
+    let currentStreak = streak
+    if (ratio >= 0.3) {
+      currentStreak += 1
+      setStreak(currentStreak)
+    } else {
+      currentStreak = 0
+      setStreak(0)
+    }
 
     addExpense({
-      amount: parseFloat(amount),
-      description,
+      amount: parsedAmount,
+      description: description.trim() || CATEGORY_LABELS[category],
       category,
       paymentMethod,
       date,
       isRecurring,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
     })
+
+    const reaction = getSmartReaction(category, parsedAmount, budgetLimit, currentStreak)
+
+    toast.custom((t) => (
+      <div 
+        className={cn(
+          "flex items-center gap-4 p-4 rounded-2xl border backdrop-blur-2xl shadow-xl w-[356px] transition-all",
+          reaction.tone === 'danger' && "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400 dark:bg-red-950/50",
+          reaction.tone === 'warning' && "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 dark:bg-amber-950/50",
+          reaction.tone === 'success' && "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-950/50"
+        )}
+      >
+        <div className={cn(
+          "flex items-center justify-center text-3xl h-12 w-12 shrink-0 rounded-full shadow-inner",
+          reaction.tone === 'danger' && "bg-red-500/20",
+          reaction.tone === 'warning' && "bg-amber-500/20",
+          reaction.tone === 'success' && "bg-emerald-500/20"
+        )}>
+          <span className={reaction.tone === 'danger' ? "animate-bounce" : ""}>{reaction.emoji}</span>
+        </div>
+        <div className="flex flex-col justify-center">
+          <span className="font-bold text-sm leading-tight text-foreground">Expense Added!</span>
+          <span className="text-[13px] font-medium opacity-90 leading-tight mt-0.5">{reaction.message}</span>
+        </div>
+      </div>
+    ))
 
     // Reset form
     setAmount('')
@@ -99,13 +146,12 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description (Optional)</Label>
             <Input
               id="description"
               placeholder="What did you spend on?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              required
             />
           </div>
 
@@ -187,9 +233,9 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
             </div>
           )}
 
-          <Button type="submit" className="w-full">
+          <AnimatedButton type="submit" className="w-full">
             Add Expense
-          </Button>
+          </AnimatedButton>
         </form>
       </DialogContent>
     </Dialog>

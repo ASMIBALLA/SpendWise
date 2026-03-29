@@ -5,11 +5,11 @@ import { NextRequest, NextResponse } from 'next/server'
 const secretKey = process.env.JWT_SECRET || 'fallback_secret_for_development_only'
 const key = new TextEncoder().encode(secretKey)
 
-export async function encrypt(payload: any) {
+export async function encrypt(payload: any, expiresIn: string = '7d') {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
+    .setExpirationTime(expiresIn)
     .sign(key)
 }
 
@@ -31,13 +31,15 @@ export async function getSession() {
   return await decrypt(session)
 }
 
-export async function setSession(userId: string) {
-  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  const session = await encrypt({ userId, expires })
+export async function setSession(userId: string, keepSignedIn: boolean = false) {
+  const expiresInMs = keepSignedIn ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000 // 30 days or 24 hours
+  const expires = new Date(Date.now() + expiresInMs)
+  
+  const session = await encrypt({ userId, expires }, keepSignedIn ? '30d' : '1d')
 
   const cookieStore = await cookies()
   cookieStore.set('spendwise_session', session, {
-    expires,
+    expires, 
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

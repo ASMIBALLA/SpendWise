@@ -35,7 +35,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, subDays, isWithinInt
 import { cn } from '@/lib/utils'
 
 export function AnalyticsPage() {
-  const { expenses, getTotalSpent, getSpendingByCategory, user } = useExpenses()
+  const { expenses, getTotalSpent, getSpendingByCategory, user, totalBudgeted } = useExpenses()
 
   // Daily spending for last 7 days
   const dailySpending = useMemo(() => {
@@ -187,12 +187,12 @@ export function AnalyticsPage() {
                 <p className="text-xs text-muted-foreground">Projected Monthly</p>
                 <p className={cn(
                   "text-xl font-bold",
-                  projectedMonthly > user.monthlyBudget && "text-destructive"
+                  projectedMonthly > totalBudgeted && "text-destructive"
                 )}>
                   {formatCurrency(projectedMonthly, currencySymbol)}
                 </p>
               </div>
-              {projectedMonthly > user.monthlyBudget ? (
+              {projectedMonthly > totalBudgeted ? (
                 <TrendingUp className="h-8 w-8 text-destructive/50" />
               ) : (
                 <TrendingDown className="h-8 w-8 text-accent/50" />

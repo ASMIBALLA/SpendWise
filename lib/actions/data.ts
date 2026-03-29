@@ -31,10 +31,10 @@ export async function fetchUserData() {
       currency: user.currency,
       monthlyBudget: user.monthlyBudget,
     } as User,
-    expenses: expenses as Expense[],
-    budgets: budgets as Budget[],
-    incomes: incomes as Income[],
-    recurringRules: recurring as RecurringRule[],
+    expenses: expenses as unknown as Expense[],
+    budgets: budgets.map(b => ({ ...b, spent: 0 })) as unknown as Budget[],
+    incomes: incomes as unknown as Income[],
+    recurringRules: recurring as unknown as RecurringRule[],
   }
 }
 

@@ -6,9 +6,11 @@ import { useExpenses } from '@/components/expense-provider'
 import { CATEGORY_LABELS } from '@/lib/constants'
 import { CATEGORY_ICONS, CATEGORY_ICON_COLORS, PAYMENT_ICONS } from '@/lib/constants'
 import { formatCurrency } from '@/lib/format'
-import { RefreshCw, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2, PartyPopper } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
+import { motion, AnimatePresence } from 'framer-motion'
+import { getEmptyStateMessage } from '@/lib/microcopy'
 
 interface RecentExpensesProps {
   limit?: number
@@ -21,18 +23,22 @@ export function RecentExpenses({ limit = 5, showAll = false }: RecentExpensesPro
 
   if (expenses.length === 0) {
     return (
-      <Card>
+      <Card className="border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-950/60 backdrop-blur-2xl rounded-[2rem] shadow-lg">
         <CardHeader>
-          <CardTitle className="text-base">Recent Expenses</CardTitle>
+          <CardTitle className="text-xl font-bold">Recent Expenses</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <ReceiptIcon className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="mt-4 text-sm font-medium">No expenses yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Start tracking your spending by adding an expense
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <motion.div 
+              animate={{ rotate: [-10, 10, -10], scale: [1, 1.1, 1] }} 
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner mb-4"
+            >
+              <PartyPopper className="h-8 w-8 text-pink-500" />
+            </motion.div>
+            <p className="mt-2 text-base font-semibold">Clean Slate!</p>
+            <p className="mt-1 text-sm text-foreground/60 font-medium max-w-[200px]">
+              {getEmptyStateMessage()}
             </p>
           </div>
         </CardContent>
@@ -41,63 +47,73 @@ export function RecentExpenses({ limit = 5, showAll = false }: RecentExpensesPro
   }
 
   return (
-    <Card>
+    <Card className="border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-950/60 backdrop-blur-2xl rounded-[2rem] shadow-lg overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Recent Expenses</CardTitle>
+        <CardTitle className="text-xl font-bold">Recent Expenses</CardTitle>
         {!showAll && expenses.length > limit && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs font-semibold text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
             Showing {limit} of {expenses.length}
           </span>
         )}
       </CardHeader>
-      <CardContent className="px-2 md:px-6">
-        <div className="space-y-2">
-          {displayedExpenses.map((expense) => {
-            const CategoryIcon = CATEGORY_ICONS[expense.category]
-            const PaymentIcon = PAYMENT_ICONS[expense.paymentMethod]
-            return (
-              <div
-                key={expense.id}
-                className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted/50 transition-colors group"
-              >
-                <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', CATEGORY_ICON_COLORS[expense.category])}>
-                  <CategoryIcon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium truncate">{expense.description}</p>
-                    {expense.isRecurring && (
-                      <RefreshCw className="h-3 w-3 text-muted-foreground shrink-0" />
-                    )}
+      <CardContent className="px-4 md:px-6">
+        <div className="space-y-3">
+          <AnimatePresence>
+            {displayedExpenses.map((expense, i) => {
+              const CategoryIcon = CATEGORY_ICONS[expense.category]
+              const PaymentIcon = PAYMENT_ICONS[expense.paymentMethod]
+              return (
+                <motion.div
+                  key={expense.id}
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, x: -20 }}
+                  transition={{ delay: i * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
+                  whileHover={{ scale: 1.02, x: 5, backgroundColor: 'rgba(0,0,0,0.02)' }}
+                  className="flex items-center gap-4 rounded-2xl p-3 border border-transparent hover:border-border/50 transition-all group dark:hover:bg-white/5 cursor-pointer shadow-sm"
+                >
+                  <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-inner', CATEGORY_ICON_COLORS[expense.category])}>
+                    <CategoryIcon className="h-5 w-5" />
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{CATEGORY_LABELS[expense.category]}</span>
-                    <span>·</span>
-                    <div className="flex items-center gap-1">
-                      <PaymentIcon className="h-3 w-3" />
-                      <span className="capitalize">{expense.paymentMethod}</span>
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-bold truncate">{expense.description}</p>
+                      {expense.isRecurring && (
+                        <RefreshCw className="h-3.5 w-3.5 text-violet-500 shrink-0" />
+                      )}
                     </div>
-                    <span>·</span>
-                    <span>{formatDistanceToNow(new Date(expense.date), { addSuffix: true })}</span>
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                      <span>{CATEGORY_LABELS[expense.category]}</span>
+                      <span className="opacity-50">•</span>
+                      <div className="flex items-center gap-1 text-foreground/70">
+                        <PaymentIcon className="h-3 w-3" />
+                        <span className="capitalize">{expense.paymentMethod}</span>
+                      </div>
+                      <span className="opacity-50">•</span>
+                      <span>{formatDistanceToNow(new Date(expense.date), { addSuffix: true })}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">
-                    {formatCurrency(expense.amount, user.currency)}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                    onClick={() => deleteExpense(expense.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Delete expense</span>
-                  </Button>
-                </div>
-              </div>
-            )
-          })}
+                  <div className="flex items-center gap-4 pr-2">
+                    <span className="text-lg font-extrabold tracking-tight">
+                      {formatCurrency(expense.amount, user.currency)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity bg-red-100 hover:bg-red-200 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteExpense(expense.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete expense</span>
+                    </Button>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
         </div>
       </CardContent>
     </Card>

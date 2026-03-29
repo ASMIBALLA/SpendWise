@@ -4,26 +4,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useExpenses } from '@/components/expense-provider'
 import { CATEGORY_LABELS, CATEGORY_ICONS } from '@/lib/constants'
 import { formatCurrency } from '@/lib/format'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Ghost } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion'
+import { getBudgetMessage } from '@/lib/microcopy'
 
 export function BudgetProgress() {
   const { budgets, user } = useExpenses()
 
   if (budgets.length === 0) {
     return (
-      <Card className="h-full">
+      <Card className="h-full border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-950/60 backdrop-blur-2xl rounded-[2rem] shadow-lg">
         <CardHeader>
-          <CardTitle className="text-base">Budget Progress</CardTitle>
+          <CardTitle className="text-xl font-bold">Budget Progress</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <TargetIcon className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="mt-4 text-sm font-medium">No budgets set</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Set budgets to track your spending limits
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <motion.div 
+              animate={{ y: [-5, 5, -5] }} 
+              transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner mb-4"
+            >
+              <Ghost className="h-8 w-8 text-muted-foreground" />
+            </motion.div>
+            <p className="mt-2 text-base font-semibold">No budgets set</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              No limits? Your wallet must be so happy ✨
             </p>
           </div>
         </CardContent>
@@ -32,61 +38,78 @@ export function BudgetProgress() {
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-950/60 backdrop-blur-2xl rounded-[2rem] shadow-lg">
       <CardHeader>
-        <CardTitle className="text-base">Budget Progress</CardTitle>
+        <CardTitle className="text-xl font-bold">Budget Progress</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {budgets.map((budget) => {
+        <div className="space-y-6">
+          {budgets.map((budget, i) => {
             const Icon = CATEGORY_ICONS[budget.category]
             const percentage = Math.min((budget.spent / budget.limit) * 100, 100)
             const isOverBudget = budget.spent > budget.limit
             const isNearLimit = percentage >= 80 && !isOverBudget
+            const message = getBudgetMessage((budget.spent / budget.limit) * 100)
 
             return (
-              <div key={budget.id} className="space-y-2">
+              <motion.div 
+                key={budget.id} 
+                className="space-y-2 p-3 rounded-2xl transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                initial={{ opacity: 0, x: -20 }}
+                animate={isOverBudget ? { opacity: 1, x: [-2, 2, -2, 2, 0] } : { opacity: 1, x: 0 }}
+                transition={isOverBudget ? { duration: 0.4, delay: i * 0.1 } : { delay: i * 0.1 }}
+              >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <div className={cn(
-                      'flex h-6 w-6 items-center justify-center rounded',
-                      isOverBudget ? 'bg-destructive/10 text-destructive' :
-                      isNearLimit ? 'bg-warning/10 text-warning-foreground' :
-                      'bg-primary/10 text-primary'
+                      'flex h-10 w-10 items-center justify-center rounded-xl shadow-sm',
+                      isOverBudget ? 'bg-red-500/20 text-red-500' :
+                      isNearLimit ? 'bg-amber-500/20 text-amber-500' :
+                      'bg-violet-500/20 text-violet-500'
                     )}>
-                      <Icon className="h-3.5 w-3.5" />
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <span className="text-sm font-medium">
-                      {CATEGORY_LABELS[budget.category]}
-                    </span>
-                    {isOverBudget && (
-                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-                    )}
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold">
+                        {CATEGORY_LABELS[budget.category]}
+                      </span>
+                      {isOverBudget ? (
+                        <span className="text-[10px] text-red-500 font-medium flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" /> {message}
+                        </span>
+                      ) : isNearLimit ? (
+                        <span className="text-[10px] text-amber-500 font-medium">{message}</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">{message}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
+                  <div className="flex items-center gap-1 text-sm">
                     <span className={cn(
-                      'font-semibold',
-                      isOverBudget && 'text-destructive'
+                      'font-bold',
+                      isOverBudget && 'text-red-500'
                     )}>
                       {formatCurrency(budget.spent, user.currency)}
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground font-medium">
                       / {formatCurrency(budget.limit, user.currency)}
                     </span>
                   </div>
                 </div>
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                  <div
+                <div className="h-3 w-full rounded-full bg-foreground/5 overflow-hidden shadow-inner">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percentage}%` }}
+                    transition={{ duration: 1, type: "spring", bounce: 0.2 }}
                     className={cn(
-                      'h-full rounded-full transition-all duration-500',
-                      isOverBudget ? 'bg-destructive' :
-                      isNearLimit ? 'bg-warning' :
-                      'bg-primary'
+                      'h-full rounded-full transition-colors duration-500 shadow-[0_0_10px_rgba(0,0,0,0.2)]',
+                      isOverBudget ? 'bg-red-500 shadow-red-500/50' :
+                      isNearLimit ? 'bg-amber-500 shadow-amber-500/50' :
+                      'bg-gradient-to-r from-violet-500 to-pink-500'
                     )}
-                    style={{ width: `${percentage}%` }}
                   />
                 </div>
-              </div>
+              </motion.div>
             )
           })}
         </div>

@@ -6,6 +6,8 @@ import { TrendingUp, TrendingDown, Wallet, Target, Receipt, AlertCircle } from '
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/format'
 
+import { motion } from 'framer-motion'
+
 export function StatsCards() {
   const { getTotalSpent, user, budgets, expenses } = useExpenses()
 
@@ -50,7 +52,7 @@ export function StatsCards() {
     {
       title: 'Today',
       value: formatCurrency(todaySpent, user.currency),
-      subtitle: overBudgetCount > 0 ? `${overBudgetCount} budget${overBudgetCount > 1 ? 's' : ''} exceeded` : 'Looking good!',
+      subtitle: overBudgetCount > 0 ? `${overBudgetCount} budget${overBudgetCount > 1 ? 's' : ''} exceeded` : 'Looking good! ✨',
       icon: overBudgetCount > 0 ? AlertCircle : TrendingUp,
       trend: overBudgetCount > 0 ? 'danger' : 'success',
     },
@@ -61,47 +63,55 @@ export function StatsCards() {
       {stats.map((stat) => {
         const Icon = stat.icon
         return (
-          <Card key={stat.title} className="overflow-hidden">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs md:text-sm text-muted-foreground truncate">{stat.title}</p>
-                  <p className="mt-1 text-lg md:text-2xl font-bold tracking-tight truncate">{stat.value}</p>
-                  <p className={cn(
-                    "mt-1 text-xs truncate",
-                    stat.trend === 'danger' && "text-destructive",
-                    stat.trend === 'warning' && "text-warning-foreground",
-                    stat.trend === 'success' && "text-accent",
-                    stat.trend === 'normal' && "text-muted-foreground"
+          <motion.div 
+            key={stat.title}
+            whileHover={{ scale: 1.05, y: -5 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          >
+            <Card className="overflow-hidden border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-950/60 backdrop-blur-2xl rounded-[2rem] shadow-lg dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
+              <CardContent className="p-4 md:p-6 flex flex-col h-full justify-between">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-xs md:text-sm text-foreground/70 font-medium truncate">{stat.title}</p>
+                    <p className="mt-1 text-xl md:text-3xl font-extrabold tracking-tight truncate">{stat.value}</p>
+                    <p className={cn(
+                      "mt-1 text-xs font-semibold truncate",
+                      stat.trend === 'danger' && "text-red-500",
+                      stat.trend === 'warning' && "text-amber-500",
+                      stat.trend === 'success' && "text-emerald-500",
+                      stat.trend === 'normal' && "text-foreground/60"
+                    )}>
+                      {stat.subtitle}
+                    </p>
+                  </div>
+                  <div className={cn(
+                    "flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-full shadow-inner",
+                    stat.trend === 'danger' && "bg-red-500/20 text-red-500",
+                    stat.trend === 'warning' && "bg-amber-500/20 text-amber-500",
+                    stat.trend === 'success' && "bg-emerald-500/20 text-emerald-500",
+                    stat.trend === 'normal' && "bg-violet-500/20 text-violet-500"
                   )}>
-                    {stat.subtitle}
-                  </p>
-                </div>
-                <div className={cn(
-                  "flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full",
-                  stat.trend === 'danger' && "bg-destructive/10 text-destructive",
-                  stat.trend === 'warning' && "bg-warning/10 text-warning-foreground",
-                  stat.trend === 'success' && "bg-accent/10 text-accent",
-                  stat.trend === 'normal' && "bg-primary/10 text-primary"
-                )}>
-                  <Icon className="h-4 w-4 md:h-5 md:w-5" />
-                </div>
-              </div>
-              {stat.progress !== undefined && (
-                <div className="mt-3">
-                  <div className="h-1.5 w-full rounded-full bg-muted">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all duration-500",
-                        stat.progress > 80 ? "bg-destructive" : "bg-primary"
-                      )}
-                      style={{ width: `${stat.progress}%` }}
-                    />
+                    <Icon className="h-5 w-5 md:h-6 md:w-6" />
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                {stat.progress !== undefined && (
+                  <div className="mt-4">
+                    <div className="h-2 w-full rounded-full bg-foreground/10 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${stat.progress}%` }}
+                        transition={{ duration: 1, type: "spring" }}
+                        className={cn(
+                          "h-full rounded-full transition-colors duration-500 shadow-sm",
+                          stat.progress > 80 ? "bg-red-500" : "bg-gradient-to-r from-violet-500 to-pink-500"
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         )
       })}
     </div>

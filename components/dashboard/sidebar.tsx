@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -13,7 +14,10 @@ import {
   X,
   DollarSign,
   Settings,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface SidebarProps {
   isOpen: boolean
@@ -31,6 +35,7 @@ const navItems = [
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
     <>
@@ -45,18 +50,28 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-card transition-transform duration-300 md:static md:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-card/80 backdrop-blur-2xl transition-all duration-300 md:static md:translate-x-0',
+          isCollapsed ? 'w-20' : 'w-64',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b px-4 md:hidden">
-          <span className="text-lg font-semibold">Menu</span>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+        <div className="flex h-16 items-center justify-between border-b px-4">
+          {!isCollapsed && (
+            <motion.span 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="text-xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-pink-500"
+            >
+              SpendWise
+            </motion.span>
+          )}
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-1 p-4">
+        <nav className="flex-1 space-y-2 p-4 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -65,31 +80,60 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 key={item.id}
                 variant={isActive ? 'secondary' : 'ghost'}
                 className={cn(
-                  'w-full justify-start gap-3',
-                  isActive && 'bg-primary/10 text-primary hover:bg-primary/15'
+                  'w-full transition-all duration-200',
+                  isCollapsed ? 'justify-center px-0 h-12 rounded-xl' : 'justify-start gap-4 px-4 h-12 rounded-xl',
+                  isActive && 'bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/20'
                 )}
                 asChild
-                onClick={onClose}
+                onClick={() => {
+                  if (window.innerWidth < 768) onClose()
+                }}
               >
                 <Link href={item.href}>
-                  <Icon className="h-4 w-4" />
-                  {item.label}
+                  <Icon className={cn("shrink-0", isCollapsed ? 'h-6 w-6' : 'h-5 w-5')} />
+                  {!isCollapsed && <span className="font-semibold text-sm">{item.label}</span>}
                 </Link>
               </Button>
             )
           })}
         </nav>
 
-        <div className="border-t p-4">
-          <div className="rounded-lg bg-primary/5 p-4">
-            <div className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Pro Tips</span>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Set monthly budgets for each category to stay on track with your finances.
-            </p>
-          </div>
+        <div className="mt-auto border-t p-4 flex flex-col gap-4">
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="rounded-2xl bg-gradient-to-br from-violet-500/10 to-pink-500/10 p-4 border border-white/20 dark:border-white/5"
+              >
+                <div className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5 text-pink-500" />
+                  <span className="text-sm font-bold text-foreground">Pro Tip ✨</span>
+                </div>
+                <p className="mt-2 text-xs font-medium text-foreground/70 leading-relaxed">
+                  Set monthly budgets for each category to stay firmly on track with your finances!
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <Button
+            type="button"
+            variant="ghost"
+            className={cn(
+              "w-full text-foreground hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-all h-12 relative z-[60] cursor-pointer",
+              isCollapsed ? "justify-center px-0" : "justify-start gap-3 px-4"
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsCollapsed((prev) => !prev);
+            }}
+          >
+            {isCollapsed ? <ChevronRight className="h-6 w-6" /> : <ChevronLeft className="h-5 w-5" />}
+            {!isCollapsed && <span className="font-semibold text-sm">Collapse</span>}
+          </Button>
         </div>
       </aside>
     </>
