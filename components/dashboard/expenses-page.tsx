@@ -1,0 +1,212 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useExpenses } from '@/components/expense-provider'
+import { CATEGORY_LABELS, CATEGORY_ICONS, CATEGORY_ICON_COLORS, PAYMENT_ICONS } from '@/lib/constants'
+import { formatCurrency } from '@/lib/format'
+import type { ExpenseCategory, PaymentMethod } from '@/lib/types'
+import {
+  Search,
+  Filter,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
+import { AddExpenseDialog } from './add-expense-dialog'
+
+export function ExpensesPage() {
+  const { expenses, deleteExpense, user } = useExpenses()
+  const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [paymentFilter, setPaymentFilter] = useState<string>('all')
+  const [dateFilter, setDateFilter] = useState<string>('all')
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(expense => {
+      const matchesSearch = expense.description.toLowerCase().includes(search.toLowerCase())
+      const matchesCategory = categoryFilter === 'all' || expense.category === categoryFilter
+      const matchesPayment = paymentFilter === 'all' || expense.paymentMethod === paymentFilter
+
+      let matchesDate = true
+      if (dateFilter !== 'all') {
+        const expenseDate = new Date(expense.date)
+        const now = new Date()
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const startOfWeek = new Date(now)
+        startOfWeek.setDate(now.getDate() - now.getDay())
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+        switch (dateFilter) {
+          case 'today':
+            matchesDate = expenseDate >= startOfDay
+            break
+          case 'week':
+            matchesDate = expenseDate >= startOfWeek
+            break
+          case 'month':
+            matchesDate = expenseDate >= startOfMonth
+            break
+        }
+      }
+
+      return matchesSearch && matchesCategory && matchesPayment && matchesDate
+    })
+  }, [expenses, search, categoryFilter, paymentFilter, dateFilter])
+
+  const totalFiltered = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Expenses</h2>
+          <p className="text-sm text-muted-foreground">
+            View and manage all your expenses
+          </p>
+        </div>
+        <AddExpenseDialog />
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search expenses..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[130px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Payment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Methods</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="upi">UPI</SelectItem>
+                  <SelectItem value="wallet">Wallet</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Date" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredExpenses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Search className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="mt-4 text-sm font-medium">No expenses found</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {expenses.length === 0
+                  ? 'Start by adding your first expense'
+                  : 'Try adjusting your filters'
+                }
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Showing {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
+                </span>
+                <span className="font-semibold">
+                  Total: {formatCurrency(totalFiltered, user.currency)}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {filteredExpenses.map((expense) => {
+                  const CategoryIcon = CATEGORY_ICONS[expense.category]
+                  const PaymentIcon = PAYMENT_ICONS[expense.paymentMethod]
+                  return (
+                    <div
+                      key={expense.id}
+                      className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', CATEGORY_ICON_COLORS[expense.category])}>
+                        <CategoryIcon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{expense.description}</p>
+                          {expense.isRecurring && (
+                            <RefreshCw className="h-3 w-3 text-muted-foreground shrink-0" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{CATEGORY_LABELS[expense.category]}</span>
+                          <span>·</span>
+                          <div className="flex items-center gap-1">
+                            <PaymentIcon className="h-3 w-3" />
+                            <span className="capitalize">{expense.paymentMethod}</span>
+                          </div>
+                          <span>·</span>
+                          <span>{format(new Date(expense.date), 'MMM d, yyyy')}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">
+                          {formatCurrency(expense.amount, user.currency)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                          onClick={() => deleteExpense(expense.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete expense</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

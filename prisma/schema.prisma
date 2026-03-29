@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  password      String
+  monthlyBudget Float     @default(15000)
+  currency      String    @default("INR")
+  expenses      Expense[]
+  budgets       Budget[]
+  incomes       Income[]
+  recurring     RecurringRule[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Expense {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount             Float
+  category           String
+  description        String
+  date               String
+  paymentMethod      String
+  isRecurring        Boolean  @default(false)
+  recurringFrequency String?
+  createdAt          DateTime @default(now())
+}
+
+model Budget {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String
+  limit     Float
+  period    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, category])
+}
+
+model Income {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount             Float
+  source             String
+  description        String?
+  date               String
+  isRecurring        Boolean  @default(false)
+  recurringFrequency String?
+  createdAt          DateTime @default(now())
+}
+
+model RecurringRule {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String   // 'expense' | 'income'
+  amount        Float
+  category      String?
+  source        String?
+  description   String
+  paymentMethod String?
+  frequency     String
+  nextDate      String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
