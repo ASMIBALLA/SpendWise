@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # =========================
 # Node / Dependencies
 # =========================
@@ -72,3 +73,10 @@ coverage/
 # TypeScript
 # =========================
 *.tsbuildinfo
+=======
+node_modules/ 
+.next/ 
+.env 
+*.exe 
+.DS_Store 
+>>>>>>> 3bd0b23 (add gitignore)
