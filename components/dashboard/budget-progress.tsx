@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useExpenses } from '@/components/expense-provider'
-import { CATEGORY_LABELS, CATEGORY_ICONS } from '@/lib/constants'
+import { getCategoryIcon, getCategoryLabel } from '@/lib/constants'
 import { formatCurrency } from '@/lib/format'
 import { AlertTriangle, Ghost } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -45,7 +45,7 @@ export function BudgetProgress() {
       <CardContent>
         <div className="space-y-6">
           {budgets.map((budget, i) => {
-            const Icon = CATEGORY_ICONS[budget.category]
+            const Icon = getCategoryIcon(budget.category)
             const percentage = Math.min((budget.spent / budget.limit) * 100, 100)
             const isOverBudget = budget.spent > budget.limit
             const isNearLimit = percentage >= 80 && !isOverBudget
@@ -71,7 +71,7 @@ export function BudgetProgress() {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-bold">
-                        {CATEGORY_LABELS[budget.category]}
+                        {getCategoryLabel(budget.category)}
                       </span>
                       {isOverBudget ? (
                         <span className="text-[10px] text-red-500 font-medium flex items-center gap-1">

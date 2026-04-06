@@ -1,4 +1,4 @@
-import { ExpenseCategory } from './types'
+import { DefaultCategory, ExpenseCategory } from './types'
 
 export type ReactionTone = 'success' | 'warning' | 'danger'
 
@@ -8,7 +8,7 @@ export interface Reaction {
   tone: ReactionTone
 }
 
-const CATEGORY_REACTIONS: Record<ExpenseCategory, { small: Reaction, medium: Reaction, high: Reaction }> = {
+const CATEGORY_REACTIONS: Record<DefaultCategory, { small: Reaction, medium: Reaction, high: Reaction }> = {
   food: {
     small: { message: "Snack attack, huh 😋", emoji: "🍔", tone: "success" },
     medium: { message: "That meal better have been worth it 👀", emoji: "🍽️", tone: "warning" },
@@ -52,7 +52,7 @@ const CATEGORY_REACTIONS: Record<ExpenseCategory, { small: Reaction, medium: Rea
 }
 
 export const getSmartReaction = (
-  category: ExpenseCategory,
+  category: DefaultCategory,
   amount: number,
   budgetLimit: number,
   streak: number = 0

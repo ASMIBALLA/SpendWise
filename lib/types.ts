@@ -32,7 +32,7 @@ export interface RecurringRule {
   isActive: boolean
 }
 
-export type ExpenseCategory =
+export type DefaultCategory =
   | 'food'
   | 'transport'
   | 'entertainment'
@@ -41,6 +41,15 @@ export type ExpenseCategory =
   | 'education'
   | 'health'
   | 'other'
+
+// Allows both default and custom category strings
+export type ExpenseCategory = DefaultCategory | (string & {})
+
+export interface CategoryItem {
+  id: string
+  name: string
+  isCustom: boolean
+}
 
 export type PaymentMethod = 'cash' | 'card' | 'upi' | 'wallet'
 

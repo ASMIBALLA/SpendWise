@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useExpenses } from '@/components/expense-provider'
-import { CATEGORY_LABELS, CHART_COLORS, ALL_CATEGORIES } from '@/lib/constants'
+import { getCategoryLabel, CHART_COLORS, ALL_CATEGORIES } from '@/lib/constants'
 import { formatCurrency } from '@/lib/format'
 import {
   PieChart,
@@ -18,9 +18,9 @@ export function SpendingChart() {
   const spending = getSpendingByCategory('month')
 
   const data = spending.map((item) => ({
-    name: CATEGORY_LABELS[item.category],
+    name: getCategoryLabel(item.category),
     value: item.amount,
-    color: CHART_COLORS[ALL_CATEGORIES.indexOf(item.category) % CHART_COLORS.length],
+    color: CHART_COLORS[(ALL_CATEGORIES as string[]).indexOf(item.category) % CHART_COLORS.length] || CHART_COLORS[CHART_COLORS.length - 1],
   }))
 
   const total = spending.reduce((sum, item) => sum + item.amount, 0)

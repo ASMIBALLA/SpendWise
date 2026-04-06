@@ -16,11 +16,12 @@ import {
   Banknote,
   Smartphone,
   Wallet,
+  Tag,
 } from 'lucide-react'
-import type { ExpenseCategory, PaymentMethod } from './types'
+import type { DefaultCategory, PaymentMethod } from './types'
 
-// Category icon mapping
-export const CATEGORY_ICONS: Record<ExpenseCategory, typeof Utensils> = {
+// Category icon mapping (built-in defaults)
+export const CATEGORY_ICONS: Record<string, typeof Utensils> = {
   food: Utensils,
   transport: Car,
   entertainment: Film,
@@ -31,8 +32,13 @@ export const CATEGORY_ICONS: Record<ExpenseCategory, typeof Utensils> = {
   other: MoreHorizontal,
 }
 
-// Category display labels
-export const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+/** Get icon for any category (returns fallback Tag icon for custom categories) */
+export function getCategoryIcon(category: string): typeof Utensils {
+  return CATEGORY_ICONS[category] || Tag
+}
+
+// Category display labels (built-in defaults)
+export const CATEGORY_LABELS: Record<string, string> = {
   food: 'Food & Dining',
   transport: 'Transport',
   entertainment: 'Entertainment',
@@ -43,8 +49,13 @@ export const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   other: 'Other',
 }
 
+/** Get display label for any category (capitalizes custom category names) */
+export function getCategoryLabel(category: string): string {
+  return CATEGORY_LABELS[category] || category.charAt(0).toUpperCase() + category.slice(1)
+}
+
 // Category colors for solid backgrounds (budget cards)
-export const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
+export const CATEGORY_COLORS: Record<string, string> = {
   food: 'bg-chart-1',
   transport: 'bg-chart-2',
   entertainment: 'bg-chart-3',
@@ -55,8 +66,13 @@ export const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   other: 'bg-muted-foreground',
 }
 
+/** Get color class for any category (returns fallback for custom categories) */
+export function getCategoryColor(category: string): string {
+  return CATEGORY_COLORS[category] || 'bg-muted-foreground'
+}
+
 // Category colors for icon backgrounds (expense lists)
-export const CATEGORY_ICON_COLORS: Record<ExpenseCategory, string> = {
+export const CATEGORY_ICON_COLORS: Record<string, string> = {
   food: 'bg-chart-1/10 text-chart-1',
   transport: 'bg-chart-2/10 text-chart-2',
   entertainment: 'bg-chart-3/10 text-chart-3',
@@ -65,6 +81,11 @@ export const CATEGORY_ICON_COLORS: Record<ExpenseCategory, string> = {
   education: 'bg-primary/10 text-primary',
   health: 'bg-accent/10 text-accent',
   other: 'bg-muted text-muted-foreground',
+}
+
+/** Get icon color classes for any category */
+export function getCategoryIconColor(category: string): string {
+  return CATEGORY_ICON_COLORS[category] || 'bg-muted text-muted-foreground'
 }
 
 // Payment method icons
@@ -87,13 +108,141 @@ export const CHART_COLORS = [
   'var(--muted-foreground)',
 ]
 
-// All expense categories
-export const ALL_CATEGORIES: ExpenseCategory[] = [
+// All default expense categories
+export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   'food', 'transport', 'entertainment', 'shopping',
   'utilities', 'education', 'health', 'other',
 ]
+
+// All expense categories (alias for backward compat)
+export const ALL_CATEGORIES = DEFAULT_CATEGORIES
 
 // All payment methods
 export const ALL_PAYMENT_METHODS: PaymentMethod[] = [
   'cash', 'card', 'upi', 'wallet',
 ]
+
+// ──────────────────────────────────────────────────
+// Automatic Categorization — keyword → category map
+// ──────────────────────────────────────────────────
+
+export const KEYWORD_CATEGORY_MAP: Record<string, DefaultCategory> = {
+  // Food & Dining
+  restaurant: 'food',
+  cafe: 'food',
+  groceries: 'food',
+  grocery: 'food',
+  swiggy: 'food',
+  zomato: 'food',
+  pizza: 'food',
+  burger: 'food',
+  breakfast: 'food',
+  lunch: 'food',
+  dinner: 'food',
+  snack: 'food',
+  coffee: 'food',
+  tea: 'food',
+  food: 'food',
+  dominos: 'food',
+  mcdonalds: 'food',
+  kfc: 'food',
+  biryani: 'food',
+
+  // Transport / Travel
+  uber: 'transport',
+  ola: 'transport',
+  bus: 'transport',
+  train: 'transport',
+  fuel: 'transport',
+  petrol: 'transport',
+  diesel: 'transport',
+  metro: 'transport',
+  cab: 'transport',
+  taxi: 'transport',
+  flight: 'transport',
+  travel: 'transport',
+  parking: 'transport',
+  toll: 'transport',
+  rapido: 'transport',
+
+  // Shopping
+  amazon: 'shopping',
+  flipkart: 'shopping',
+  clothes: 'shopping',
+  electronics: 'shopping',
+  myntra: 'shopping',
+  shoes: 'shopping',
+  gadget: 'shopping',
+  mall: 'shopping',
+  shopping: 'shopping',
+  meesho: 'shopping',
+
+  // Education
+  books: 'education',
+  book: 'education',
+  course: 'education',
+  fees: 'education',
+  tuition: 'education',
+  udemy: 'education',
+  coursera: 'education',
+  school: 'education',
+  college: 'education',
+  exam: 'education',
+  stationery: 'education',
+
+  // Utilities
+  electricity: 'utilities',
+  water: 'utilities',
+  wifi: 'utilities',
+  internet: 'utilities',
+  broadband: 'utilities',
+  phone: 'utilities',
+  recharge: 'utilities',
+  gas: 'utilities',
+  rent: 'utilities',
+  bill: 'utilities',
+
+  // Health
+  medicine: 'health',
+  hospital: 'health',
+  doctor: 'health',
+  pharmacy: 'health',
+  gym: 'health',
+  fitness: 'health',
+  clinic: 'health',
+  medical: 'health',
+  therapy: 'health',
+
+  // Entertainment
+  movie: 'entertainment',
+  netflix: 'entertainment',
+  spotify: 'entertainment',
+  game: 'entertainment',
+  gaming: 'entertainment',
+  concert: 'entertainment',
+  party: 'entertainment',
+  subscription: 'entertainment',
+  hotstar: 'entertainment',
+  prime: 'entertainment',
+}
+
+/**
+ * Auto-detect a category from a description string.
+ * Scans each word for keyword matches. Returns 'other' if nothing matches.
+ */
+export function detectCategory(description: string): DefaultCategory {
+  const words = description.toLowerCase().split(/[\s,.\-/]+/)
+  for (const word of words) {
+    if (KEYWORD_CATEGORY_MAP[word]) {
+      return KEYWORD_CATEGORY_MAP[word]
+    }
+  }
+  // Also try substring matching for partial matches (e.g., "swiggy order")
+  const lower = description.toLowerCase()
+  for (const [keyword, category] of Object.entries(KEYWORD_CATEGORY_MAP)) {
+    if (lower.includes(keyword)) {
+      return category
+    }
+  }
+  return 'other'
+}

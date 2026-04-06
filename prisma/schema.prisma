@@ -18,8 +18,21 @@ model User {
   budgets       Budget[]
   incomes       Income[]
   recurring     RecurringRule[]
+  categories    Category[]
+  savingsGoals  SavingsGoal[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  isCustom  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name])
 }
 
 model Expense {
@@ -75,4 +88,15 @@ model RecurringRule {
   nextDate      String
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
+}
+
+model SavingsGoal {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  targetAmount Float
+  savedAmount  Float    @default(0)
+  deadline     String?
+  createdAt    DateTime @default(now())
 }

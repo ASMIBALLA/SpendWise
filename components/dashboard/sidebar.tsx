@@ -15,7 +15,9 @@ import {
   DollarSign,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  PiggyBank,
+  Camera
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -29,6 +31,8 @@ const navItems = [
   { id: 'expenses', label: 'Expenses', icon: Receipt, href: '/expenses' },
   { id: 'budgets', label: 'Budgets', icon: Target, href: '/budgets' },
   { id: 'analytics', label: 'Analytics', icon: TrendingUp, href: '/analytics' },
+  { id: 'scan', label: 'Scan', icon: Camera, href: '/scan' },
+  { id: 'goals', label: 'Goals', icon: PiggyBank, href: '/goals' },
   { id: 'income', label: 'Income', icon: DollarSign, href: '/income' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
 ]

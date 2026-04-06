@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useExpenses } from '@/components/expense-provider'
-import { CATEGORY_LABELS, CATEGORY_ICONS, CATEGORY_COLORS } from '@/lib/constants'
+import { getCategoryIcon, getCategoryLabel, getCategoryColor, DEFAULT_CATEGORIES } from '@/lib/constants'
 import { formatCurrency } from '@/lib/format'
 import type { ExpenseCategory, Budget } from '@/lib/types'
 import {
@@ -31,9 +31,10 @@ import {
   TrendingDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CategoryManager } from './category-manager'
 
 export function BudgetsPage() {
-  const { budgets, user, updateBudget, addBudget, updateUser, totalBudgeted } = useExpenses()
+  const { budgets, user, updateBudget, addBudget, updateUser, totalBudgeted, categories } = useExpenses()
   const [isAddingBudget, setIsAddingBudget] = useState(false)
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [newBudgetCategory, setNewBudgetCategory] = useState<ExpenseCategory>('food')
@@ -46,7 +47,8 @@ export function BudgetsPage() {
   const remainingGlobal = user.monthlyBudget - totalSpent
 
   const existingCategories = budgets.map(b => b.category)
-  const availableCategories = (Object.keys(CATEGORY_ICONS) as ExpenseCategory[])
+  const availableCategories = categories
+    .map((c) => c.name)
     .filter(cat => !existingCategories.includes(cat))
 
   const validateBudget = (newLimit: number, category: ExpenseCategory, budgetId?: string) => {
@@ -134,7 +136,7 @@ export function BudgetsPage() {
                     <SelectContent>
                       {availableCategories.map((cat) => (
                         <SelectItem key={cat} value={cat}>
-                          {CATEGORY_LABELS[cat]}
+                          {getCategoryLabel(cat)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -257,7 +259,7 @@ export function BudgetsPage() {
       {/* Category Budgets */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {budgets.map((budget) => {
-          const Icon = CATEGORY_ICONS[budget.category]
+          const Icon = getCategoryIcon(budget.category)
           const percentage = (budget.spent / budget.limit) * 100
           const isOverBudget = budget.spent > budget.limit
           const isNearLimit = percentage >= 80 && !isOverBudget
@@ -270,7 +272,7 @@ export function BudgetsPage() {
             )}>
               <div className={cn(
                 "absolute top-0 left-0 h-1 w-full",
-                CATEGORY_COLORS[budget.category]
+                getCategoryColor(budget.category)
               )} />
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -285,7 +287,7 @@ export function BudgetsPage() {
                     </div>
                     <div>
                       <CardTitle className="text-sm font-medium">
-                        {CATEGORY_LABELS[budget.category]}
+                        {getCategoryLabel(budget.category)}
                       </CardTitle>
                       <CardDescription className="text-xs capitalize">
                         {budget.period}
@@ -335,7 +337,7 @@ export function BudgetsPage() {
                         "h-full rounded-full transition-all duration-500",
                         isOverBudget ? "bg-destructive" :
                         isNearLimit ? "bg-warning" :
-                        CATEGORY_COLORS[budget.category]
+                        getCategoryColor(budget.category)
                       )}
                       style={{ width: `${Math.min(percentage, 100)}%` }}
                     />
@@ -360,10 +362,10 @@ export function BudgetsPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 {(() => {
-                  const Icon = CATEGORY_ICONS[editingBudget.category]
+                  const Icon = getCategoryIcon(editingBudget.category)
                   return <Icon className="h-5 w-5" />
                 })()}
-                <span className="font-medium">{CATEGORY_LABELS[editingBudget.category]}</span>
+                <span className="font-medium">{getCategoryLabel(editingBudget.category)}</span>
               </div>
               <div className="space-y-2">
                 <Label>New Limit ({user.currency})</Label>
@@ -401,6 +403,9 @@ export function BudgetsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Category Management */}
+      <CategoryManager />
     </div>
   )
 }

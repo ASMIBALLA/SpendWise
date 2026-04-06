@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { AnimatedButton } from '@/components/auth/animated-button'
 import { toast } from 'sonner'
@@ -24,8 +24,13 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useExpenses } from '@/components/expense-provider'
-import { Plus } from 'lucide-react'
-import { CATEGORY_ICONS, CATEGORY_LABELS } from '@/lib/constants'
+import { Plus, Sparkles } from 'lucide-react'
+import {
+  getCategoryIcon,
+  getCategoryLabel,
+  detectCategory,
+  DEFAULT_CATEGORIES,
+} from '@/lib/constants'
 import type { ExpenseCategory, PaymentMethod, RecurringFrequency } from '@/lib/types'
 
 interface AddExpenseDialogProps {
@@ -35,7 +40,7 @@ interface AddExpenseDialogProps {
 }
 
 export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpenseDialogProps) {
-  const { addExpense, user, budgets } = useExpenses()
+  const { addExpense, user, budgets, categories } = useExpenses()
   const [open, setOpen] = useState(defaultOpen ?? false)
   const [streak, setStreak] = useState(0)
   const [amount, setAmount] = useState('')
@@ -45,11 +50,34 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurringFrequency, setRecurringFrequency] = useState<RecurringFrequency>('monthly')
+  const [wasAutoDetected, setWasAutoDetected] = useState(false)
+  const manuallySelected = useRef(false)
+
+  // Auto-detect category when description changes
+  useEffect(() => {
+    if (manuallySelected.current) return
+    if (!description.trim()) return
+
+    const detected = detectCategory(description)
+    if (detected !== 'other' || !category) {
+      setCategory(detected)
+      setWasAutoDetected(detected !== 'other')
+    }
+  }, [description]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCategoryChange = (cat: ExpenseCategory) => {
+    manuallySelected.current = true
+    setCategory(cat)
+    setWasAutoDetected(false)
+  }
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
     onOpenChange?.(newOpen)
   }
+
+  // All category names: default + custom
+  const allCategoryNames = categories.map((c) => c.name)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,7 +101,7 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
 
     addExpense({
       amount: parsedAmount,
-      description: description.trim() || CATEGORY_LABELS[category],
+      description: description.trim() || getCategoryLabel(category),
       category,
       paymentMethod,
       date,
@@ -81,7 +109,11 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
     })
 
-    const reaction = getSmartReaction(category, parsedAmount, budgetLimit, currentStreak)
+    // Use default category for microcopy — fallback to 'other' for custom categories
+    const microcopyCategory = (DEFAULT_CATEGORIES as string[]).includes(category)
+      ? category as any
+      : 'other'
+    const reaction = getSmartReaction(microcopyCategory, parsedAmount, budgetLimit, currentStreak)
 
     toast.custom((t) => (
       <div 
@@ -114,6 +146,8 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
     setPaymentMethod('upi')
     setDate(new Date().toISOString().split('T')[0])
     setIsRecurring(false)
+    setWasAutoDetected(false)
+    manuallySelected.current = false
     handleOpenChange(false)
   }
 
@@ -153,20 +187,27 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+            {wasAutoDetected && (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 animate-in fade-in-0 slide-in-from-top-1 duration-300">
+                <Sparkles className="h-3 w-3" />
+                <span>Auto-detected: <strong>{getCategoryLabel(category)}</strong></span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label>Category</Label>
+            {/* Show grid for default categories */}
             <div className="grid grid-cols-4 gap-2">
-              {(Object.keys(CATEGORY_ICONS) as ExpenseCategory[]).map((cat) => {
-                const Icon = CATEGORY_ICONS[cat]
+              {(DEFAULT_CATEGORIES as string[]).map((cat) => {
+                const Icon = getCategoryIcon(cat)
                 return (
                   <Button
                     key={cat}
                     type="button"
                     variant={category === cat ? 'default' : 'outline'}
                     className="flex flex-col h-16 gap-1 px-2"
-                    onClick={() => setCategory(cat)}
+                    onClick={() => handleCategoryChange(cat)}
                   >
                     <Icon className="h-4 w-4" />
                     <span className="text-[10px] capitalize">{cat}</span>
@@ -174,6 +215,27 @@ export function AddExpenseDialog({ defaultOpen, onOpenChange, trigger }: AddExpe
                 )
               })}
             </div>
+
+            {/* Show custom categories as a dropdown if they exist */}
+            {allCategoryNames.filter((n) => !(DEFAULT_CATEGORIES as string[]).includes(n)).length > 0 && (
+              <Select
+                value={(DEFAULT_CATEGORIES as string[]).includes(category) ? '' : category}
+                onValueChange={(v) => handleCategoryChange(v)}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Or pick a custom category..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allCategoryNames
+                    .filter((n) => !(DEFAULT_CATEGORIES as string[]).includes(n))
+                    .map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {getCategoryLabel(cat)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

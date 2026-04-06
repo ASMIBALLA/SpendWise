@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useExpenses } from '@/components/expense-provider'
-import { CATEGORY_LABELS, CHART_COLORS, ALL_CATEGORIES } from '@/lib/constants'
+import { getCategoryLabel, CHART_COLORS, ALL_CATEGORIES } from '@/lib/constants'
 import { formatCurrency } from '@/lib/format'
 import type { ExpenseCategory } from '@/lib/types'
 import {
@@ -312,7 +312,7 @@ export function AnalyticsPage() {
                     <div key={cat.category} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">
-                          {CATEGORY_LABELS[cat.category]}
+                          {getCategoryLabel(cat.category)}
                         </span>
                         <span className="text-sm font-semibold">
                           {formatCurrency(cat.amount, currencySymbol)}
@@ -323,7 +323,7 @@ export function AnalyticsPage() {
                           className="h-full rounded-full transition-all duration-500"
                           style={{
                             width: `${percentage}%`,
-                            backgroundColor: CHART_COLORS[ALL_CATEGORIES.indexOf(cat.category) % CHART_COLORS.length]
+                            backgroundColor: CHART_COLORS[(ALL_CATEGORIES as string[]).indexOf(cat.category) % CHART_COLORS.length] || CHART_COLORS[CHART_COLORS.length - 1]
                           }}
                         />
                       </div>

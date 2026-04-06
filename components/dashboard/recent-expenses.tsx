@@ -3,8 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useExpenses } from '@/components/expense-provider'
-import { CATEGORY_LABELS } from '@/lib/constants'
-import { CATEGORY_ICONS, CATEGORY_ICON_COLORS, PAYMENT_ICONS } from '@/lib/constants'
+import { getCategoryIcon, getCategoryLabel, getCategoryIconColor, PAYMENT_ICONS } from '@/lib/constants'
 import { formatCurrency } from '@/lib/format'
 import { RefreshCw, Trash2, PartyPopper } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -60,7 +59,7 @@ export function RecentExpenses({ limit = 5, showAll = false }: RecentExpensesPro
         <div className="space-y-3">
           <AnimatePresence>
             {displayedExpenses.map((expense, i) => {
-              const CategoryIcon = CATEGORY_ICONS[expense.category]
+              const CategoryIcon = getCategoryIcon(expense.category)
               const PaymentIcon = PAYMENT_ICONS[expense.paymentMethod]
               return (
                 <motion.div
@@ -72,7 +71,7 @@ export function RecentExpenses({ limit = 5, showAll = false }: RecentExpensesPro
                   whileHover={{ scale: 1.02, x: 5, backgroundColor: 'rgba(0,0,0,0.02)' }}
                   className="flex items-center gap-4 rounded-2xl p-3 border border-transparent hover:border-border/50 transition-all group dark:hover:bg-white/5 cursor-pointer shadow-sm"
                 >
-                  <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-inner', CATEGORY_ICON_COLORS[expense.category])}>
+                  <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-inner', getCategoryIconColor(expense.category))}>
                     <CategoryIcon className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -83,7 +82,7 @@ export function RecentExpenses({ limit = 5, showAll = false }: RecentExpensesPro
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                      <span>{CATEGORY_LABELS[expense.category]}</span>
+                      <span>{getCategoryLabel(expense.category)}</span>
                       <span className="opacity-50">•</span>
                       <div className="flex items-center gap-1 text-foreground/70">
                         <PaymentIcon className="h-3 w-3" />

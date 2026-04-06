@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { Expense, Budget, User, Income, ExpenseCategory, RecurringRule } from '@/lib/types'
+import type { Expense, Budget, User, Income, ExpenseCategory, RecurringRule, CategoryItem } from '@/lib/types'
+import { DEFAULT_CATEGORIES } from '@/lib/constants'
 import {
   fetchUserData,
   syncExpense,
@@ -9,6 +10,8 @@ import {
   syncIncome,
   syncRecurringRule,
   syncUserProfile,
+  syncCategory as syncCategoryAction,
+  deleteCategory as deleteCategoryAction,
 } from '@/lib/actions/data'
 
 // Helper to reliably format a local JS Date to YYYY-MM-DD for comparisons
@@ -29,6 +32,9 @@ export function useExpenseStore() {
   })
   const [incomes, setIncomes] = useState<Income[]>([])
   const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([])
+  const [categories, setCategories] = useState<CategoryItem[]>(
+    DEFAULT_CATEGORIES.map((name) => ({ id: name, name, isCustom: false }))
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   // Calculate spent amounts for budgets
@@ -140,6 +146,9 @@ export function useExpenseStore() {
           setBudgets(calculateBudgetSpent(data.expenses, data.budgets))
           setIncomes(data.incomes)
           setRecurringRules(data.recurringRules)
+          if (data.categories && data.categories.length > 0) {
+            setCategories(data.categories)
+          }
           processRecurringRules(data.recurringRules)
         }
         setIsLoading(false)
@@ -311,6 +320,36 @@ export function useExpenseStore() {
     })
   }, [])
 
+  // ──────────────────────────────────────────────────
+  // Category management
+  // ──────────────────────────────────────────────────
+
+  const addCategory = useCallback((name: string) => {
+    const normalized = name.toLowerCase().trim()
+    if (!normalized) return null
+
+    // Check if already exists
+    if (categories.some((c) => c.name === normalized)) return null
+
+    const newCategory: CategoryItem = {
+      id: crypto.randomUUID(),
+      name: normalized,
+      isCustom: true,
+    }
+    setCategories((prev) => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name)))
+    syncCategoryAction(newCategory)
+    return newCategory
+  }, [categories])
+
+  const removeCategory = useCallback((name: string) => {
+    // Prevent deleting default categories
+    if ((DEFAULT_CATEGORIES as string[]).includes(name)) return false
+
+    setCategories((prev) => prev.filter((c) => c.name !== name))
+    deleteCategoryAction(name)
+    return true
+  }, [])
+
   // Get expenses for a specific period
   const getExpensesByPeriod = useCallback(
     (period: 'today' | 'week' | 'month' | 'all') => {
@@ -381,30 +420,29 @@ export function useExpenseStore() {
   const getSpendingByCategory = useCallback(
     (period: 'today' | 'week' | 'month' | 'all') => {
       const periodExpenses = getExpensesByPeriod(period)
-      const categoryMap: Record<string, number> = {
-        food: 0,
-        transport: 0,
-        entertainment: 0,
-        shopping: 0,
-        utilities: 0,
-        education: 0,
-        health: 0,
-        other: 0,
-      }
+      const categoryMap: Record<string, number> = {}
+
+      // Initialize with all known category names
+      categories.forEach((cat) => {
+        categoryMap[cat.name] = 0
+      })
+
       periodExpenses.forEach((exp) => {
         const cat = exp.category.toLowerCase()
         if (categoryMap[cat] !== undefined) {
           categoryMap[cat] += exp.amount
         } else {
-          categoryMap.other += exp.amount
+          // Unknown category — still collect
+          categoryMap[cat] = (categoryMap[cat] || 0) + exp.amount
         }
       })
+
       return Object.entries(categoryMap)
         .filter(([, amount]) => amount > 0)
         .map(([category, amount]) => ({ category: category as ExpenseCategory, amount }))
         .sort((a, b) => b.amount - a.amount)
     },
-    [getExpensesByPeriod]
+    [getExpensesByPeriod, categories]
   )
 
   // Export/Import stubs (kept local for the file exports instead of syncing immediately, syncing would happen on add)
@@ -502,6 +540,7 @@ export function useExpenseStore() {
     user,
     incomes,
     recurringRules,
+    categories,
     isLoading,
     addExpense,
     updateExpense,
@@ -511,6 +550,8 @@ export function useExpenseStore() {
     updateUser,
     addIncome,
     deleteIncome,
+    addCategory,
+    removeCategory,
     getExpensesByPeriod,
     getTotalSpent,
     getTotalIncome,
