@@ -76,5 +76,3 @@ SpendWise is built for the **"Main Character"** energy.
 - **Witty Microcopy**: No generic labels; every button and message has personality.
 - **Micro-Interactions**: Hover states, spring animations, and physics-based UI elements.
 
----
-Built with ❤️ by [Antigravity](https://google.com)
